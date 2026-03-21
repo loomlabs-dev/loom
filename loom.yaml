@@ -1,0 +1,21 @@
+version: 1
+
+authority:
+  surfaces:
+    - id: readme
+      path: README.md
+      role: root_truth
+      kind: product
+      description: Public product truth for the current alpha.
+
+    - id: alpha-contract
+      path: docs/alpha/ALPHA_0_1_CONTRACT.md
+      role: policy
+      kind: release
+      description: Supported public alpha surface.
+
+    - id: roadmap
+      path: ROADMAP.md
+      role: boundary
+      kind: sequencing
+      description: Public build order for the current coordination loop.

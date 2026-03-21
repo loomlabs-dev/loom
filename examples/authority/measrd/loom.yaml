@@ -1,0 +1,33 @@
+version: 1
+
+authority:
+  surfaces:
+    - id: measrd-sot
+      path: MEASRD_SOT.md
+      role: root_truth
+      kind: source_of_truth
+      description: Highest-level product and operating truth for Measrd.
+
+    - id: foundation-status
+      path: FOUNDATION_STATUS.md
+      role: root_truth
+      kind: status
+      description: Current foundation-build posture and active project read.
+
+    - id: checkpoint-status
+      path: foundation/delivery/DECISION_CHECKPOINT_STATUS.yaml
+      role: boundary
+      kind: checkpoint
+      description: Checkpoint sequencing and current authorization state.
+
+    - id: first-vertical-slice-authorization
+      path: foundation/delivery/FIRST_VERTICAL_SLICE_AUTHORIZATION.md
+      role: policy
+      kind: authorization
+      description: The current authorized boundary for the first vertical slice.
+
+    - id: loom-operating-contract
+      path: foundation/operations/LOOM_OPERATING_CONTRACT.md
+      role: policy
+      kind: operating_contract
+      description: Declared boundary for how Loom may operate inside Measrd.
