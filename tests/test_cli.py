@@ -6587,6 +6587,8 @@ class CliTest(unittest.TestCase):
             self.assertIn("Released claims: 1", output)
             self.assertIn("Released intents: 1", output)
             self.assertIn("Pruned idle agents: 2", output)
+            self.assertIn("Do this first: Re-enter Loom's coordination loop from the cleaned board.", output)
+            self.assertIn("next: loom start", output)
 
             with working_directory(repo_root):
                 project = load_project(repo_root)
@@ -6635,6 +6637,57 @@ class CliTest(unittest.TestCase):
                     tuple(presence.agent_id for presence in store.list_agents(limit=None)),
                     ("agent-idle",),
                 )
+
+    def test_clean_json_routes_back_to_start(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = pathlib.Path(temp_dir)
+            (repo_root / ".git").mkdir()
+            clean_stdout = io.StringIO()
+
+            with working_directory(repo_root), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(["init", "--no-daemon", "--agent", "agent-a"]), 0)
+                self.assertEqual(
+                    main(
+                        [
+                            "claim",
+                            "Legacy pid claim",
+                            "--agent",
+                            "dev@host:pid-101",
+                            "--scope",
+                            "src/auth",
+                        ]
+                    ),
+                    0,
+                )
+                self.assertEqual(
+                    main(
+                        [
+                            "intent",
+                            "Legacy pid intent",
+                            "--agent",
+                            "dev@host:pid-101",
+                            "--scope",
+                            "src/auth",
+                        ]
+                    ),
+                    0,
+                )
+
+            with patch(
+                "loom.cli.terminal_identity_process_is_alive",
+                side_effect=lambda agent_id: False if agent_id == "dev@host:pid-101" else None,
+            ):
+                with working_directory(repo_root), contextlib.redirect_stdout(clean_stdout):
+                    self.assertEqual(main(["clean", "--json"]), 0)
+
+            payload = json.loads(clean_stdout.getvalue())
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["closed_dead_sessions"], ["dev@host:pid-101"])
+            self.assertEqual(payload["next_action"]["command"], "loom start")
+            self.assertEqual(
+                payload["next_steps"],
+                ["loom start", "loom status", "loom agents"],
+            )
 
     def test_status_marks_stale_active_records(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

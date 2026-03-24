@@ -1381,7 +1381,13 @@ def _handle_clean(args: argparse.Namespace) -> int:
         )
         pruned_idle_agents = client.store.prune_idle_agents(agent_ids=idle_agent_ids)
 
-    next_steps = ("loom status", "loom agents", "loom start")
+    next_action = _command_action(
+        command="loom start",
+        summary="Re-enter Loom's coordination loop from the cleaned board.",
+        reason="Cleanup is complete and Loom does not see remaining repo-wide recovery work.",
+        confidence="medium",
+    )
+    next_steps = ("loom start", "loom status", "loom agents")
     if _emit_json(
         args,
         project=client.project,
@@ -1391,6 +1397,7 @@ def _handle_clean(args: argparse.Namespace) -> int:
         released_claim_ids=tuple(released_claims),
         released_intent_ids=tuple(released_intents),
         pruned_idle_agents=tuple(pruned_idle_agents),
+        next_action=next_action,
         next_steps=next_steps,
     ):
         return 0
@@ -1411,6 +1418,7 @@ def _handle_clean(args: argparse.Namespace) -> int:
         print("Pruned idle agents: skipped (--keep-idle)")
     else:
         print(f"Pruned idle agents: {len(pruned_idle_agents)}")
+    _print_start_next_action(next_action)
     print("Next:")
     for step in next_steps:
         print(f"- {step}")

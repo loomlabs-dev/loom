@@ -1073,6 +1073,15 @@ class McpTest(unittest.TestCase):
             clean_structured = clean_result["result"]["structuredContent"]
             self.assertEqual(clean_structured["closed_dead_sessions"], ["dev@host:pid-101"])
             self.assertEqual(len(clean_structured["released_claim_ids"]), 1)
+            self.assertEqual(clean_structured["next_action"]["tool"], "loom_start")
+            self.assertEqual(
+                clean_structured["next_steps"],
+                [
+                    "Call loom_start to ask Loom what to do next in this repository.",
+                    "Call loom_status to compare the updated repo state.",
+                    "Call loom_agents to inspect the remaining agents.",
+                ],
+            )
             self.assertIn("dev@host:pid-101", clean_structured["pruned_idle_agents"])
 
     def test_finish_tool_releases_work_and_records_optional_handoff(self) -> None:
@@ -4506,8 +4515,7 @@ class McpTest(unittest.TestCase):
             context_read_structured = context_read["result"]["structuredContent"]
             context_entries = context_read_structured["context"]
             self.assertEqual(
-                context_entries[0]["acknowledgments"][0]["status"],
-                "adapted",
+                context_entries[0]["acknowledgments"][0]["status"],                "adapted",
             )
             self.assertEqual(
                 context_read_structured["links"]["items"],

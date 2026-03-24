@@ -59,6 +59,7 @@ from .mcp_graph import (
 )
 from .mcp_support import (
     json_text as _json_text,
+    tool_action as _tool_action,
     tool_action_from_recommendation as _tool_action_from_recommendation,
     tool_agent_action as _tool_agent_action,
     tool_agent_next_steps as _tool_agent_next_steps,
@@ -279,7 +280,6 @@ def _start_tool_text(payload: dict[str, object]) -> str:
     if reason:
         text += f" Why: {reason}"
     return text
-
 
 def _authority_summary(
     project: object | None,
@@ -1794,6 +1794,13 @@ class LoomMcpServer:
             if dead_session_ids or released_claim_ids or released_intent_ids or pruned_idle_agents
             else "Board already clean."
         )
+        next_action = {
+            "tool": "loom_start",
+            "arguments": {},
+            "summary": "Re-enter Loom's coordination loop from the cleaned board.",
+            "reason": "Cleanup is complete and Loom does not see remaining repo-wide recovery work.",
+            "confidence": "medium",
+        }
         return {
             "text": text,
             "structured": self._read_tool_structured(
@@ -1802,6 +1809,7 @@ class LoomMcpServer:
                 released_claim_ids=tuple(released_claim_ids),
                 released_intent_ids=tuple(released_intent_ids),
                 pruned_idle_agents=tuple(pruned_idle_agents),
+                next_action=next_action,
                 links={
                     "start": "loom://start",
                     "status": "loom://status",

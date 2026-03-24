@@ -270,6 +270,9 @@ context, then prunes idle agent history by default so the board can return to
 zero active and zero idle agents after a messy dogfood or aborted terminal
 run.
 
+After cleanup, the usual next move is `loom start` so Loom can tell you
+whether the board is truly clear or if anything still needs attention.
+
 ### `loom renew`
 
 Use this when current work is still active but its claim or intent lease

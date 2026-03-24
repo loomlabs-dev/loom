@@ -88,9 +88,9 @@ def tool_clean_step() -> str:
 
 def tool_clean_next_steps() -> tuple[str, ...]:
     return (
+        "Call loom_start to ask Loom what to do next in this repository.",
         "Call loom_status to compare the updated repo state.",
         "Call loom_agents to inspect the remaining agents.",
-        "Call loom_start to ask Loom what to do next in this repository.",
     )
 
 
