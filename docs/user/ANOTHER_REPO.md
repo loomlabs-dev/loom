@@ -63,8 +63,9 @@ loom start --bind agent-a
 loom claim "Describe the work you're starting" --scope path/to/area
 ```
 
-Start with `loom start --bind agent-a`. Loom now tries to reuse a terminal
-identity first and a host-process identity second before falling back.
+Start with `loom start --bind agent-a`. Loom reuses terminal identity when it
+can and otherwise binds through a reusable host-process identity before
+falling back.
 
 If Loom prints a `Binding note:`, switch that shell to:
 

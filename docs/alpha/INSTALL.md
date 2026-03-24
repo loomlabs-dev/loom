@@ -11,6 +11,9 @@ Today that means:
 - verify the CLI locally
 - start dogfooding carefully
 
+This repo-first path has now been validated on a second machine outside the
+primary Loom dev environment, including a repeat session in a real repo.
+
 PyPI packaging can come later. The goal right now is a trustworthy first run,
 not broad packaging theater.
 
@@ -70,9 +73,9 @@ loom start --bind agent-a
 loom claim "Describe the work you're starting" --scope path/to/area
 ```
 
-Loom now tries to reuse a terminal identity first and a host-process identity
-second before falling back to a raw process id. Start with `loom start --bind`
-unless Loom tells you otherwise.
+`loom start --bind` is the default path. Loom reuses terminal identity when it
+can and otherwise binds through a reusable host-process identity before
+falling back to a raw process id.
 
 If Loom prints a `Binding note:` after `loom start --bind`, switch that shell
 to `LOOM_AGENT` before continuing.
@@ -83,8 +86,8 @@ For the shortest real two-agent walkthrough, continue with
 ## If `--bind` Prints A Binding Note
 
 Some shell environments still behave like unstable or hosted terminals even on
-local machines. Loom now tries a reusable host-process identity before giving
-up, and tells you immediately when that still is not enough. If
+local machines. Loom now checks for a reusable host-process identity before
+giving up, and tells you immediately when that still is not enough. If
 `loom start --bind <agent-name>` or `loom whoami --bind <agent-name>` prints a
 `Binding note:`, switch to `LOOM_AGENT` for that shell right away:
 
@@ -95,10 +98,6 @@ loom whoami
 
 If `loom whoami` now shows the expected agent id, continue the session with
 `LOOM_AGENT` set for that shell.
-
-This is also the right move when a previous `--bind` happened in a different
-shell invocation and the current command no longer shares that terminal
-identity.
 
 If an older run already left a dead `pid-*` session behind, recover like this:
 

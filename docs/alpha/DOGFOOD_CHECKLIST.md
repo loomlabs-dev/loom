@@ -17,8 +17,9 @@ Evaluate the current public alpha honestly:
 - pick a real repo and a real task with plausible overlap
 - choose stable agent identities for each terminal or agent runtime
 - in stable shells, prefer `loom start --bind <agent-name>` for the first move
-- Loom now tries to reuse a host-process identity before falling back, so
-  start with `--bind` unless Loom tells you it cannot
+- Loom reuses terminal identity when it can and otherwise binds through a
+  reusable host-process identity before falling back, so start with `--bind`
+  unless Loom tells you it cannot
 - if Loom prints a `Binding note:` after `--bind`, switch to `LOOM_AGENT`
   immediately for that shell
 - otherwise start with `loom start`
@@ -64,7 +65,7 @@ Operational fit:
 
 - did daemon-backed behavior feel meaningfully better than direct mode?
 - did identities stay stable across terminals?
-- did hosted shells still need `LOOM_AGENT`, or did `--bind` now hold?
+- if Loom printed a `Binding note:`, did the fallback still feel obvious?
 - did scope entry feel easy enough in real work?
 
 Cleanup:

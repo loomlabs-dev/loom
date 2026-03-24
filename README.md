@@ -43,10 +43,10 @@ loom start --bind agent-a
 loom claim "Describe the work you're starting"
 ```
 
-`loom start --bind` now tries to reuse a terminal identity first and a
-host-process identity second before falling back to a raw process id. If Loom
-still prints a `Binding note:`, switch that shell to `LOOM_AGENT` and keep
-going.
+`loom start --bind` reuses terminal identity when it can and otherwise binds
+through a reusable host-process identity before falling back to a raw process
+id. If Loom still prints a `Binding note:`, switch that shell to `LOOM_AGENT`
+and keep going.
 
 If you are coordinating with multiple agents, the smallest useful habits are:
 

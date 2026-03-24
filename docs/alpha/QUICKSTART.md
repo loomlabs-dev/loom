@@ -44,28 +44,9 @@ loom claim "Refactor auth flow" --scope src/auth
 loom start
 ```
 
-Start with `loom start --bind agent-a`. Loom now tries to reuse a terminal
-identity first and a host-process identity second before falling back.
-
-If `loom start --bind agent-a` prints a `Binding note:`, switch immediately:
-
-```bash
-export LOOM_AGENT=agent-a
-loom whoami
-loom claim "Refactor auth flow" --scope src/auth
-loom start
-```
-
-If an older run already fell back to a raw `tty` / `pid` identity instead of
-`agent-a`, recover like this before continuing:
-
-```bash
-loom clean
-export LOOM_AGENT=agent-a
-loom whoami
-loom claim "Refactor auth flow" --scope src/auth
-loom start
-```
+Start with `loom start --bind agent-a`. If Loom prints a `Binding note:`,
+follow the fallback in [INSTALL.md](INSTALL.md) to pin `agent-a` with
+`LOOM_AGENT`, then continue with the claim and `loom start` commands above.
 
 ## Terminal 2
 
@@ -76,16 +57,9 @@ loom intent "Touch auth middleware" --reason "Need auth middleware integration" 
 loom start
 ```
 
-If `loom start --bind agent-b` prints a `Binding note:`, or the second shell
-behaves like an unstable terminal identity, switch to:
-
-```bash
-export LOOM_AGENT=agent-b
-loom whoami
-loom claim "Add rate limiting hook" --scope src/api
-loom intent "Touch auth middleware" --reason "Need auth middleware integration" --scope src/auth
-loom start
-```
+Start with `loom start --bind agent-b`. If Loom prints a `Binding note:`,
+follow the same fallback in [INSTALL.md](INSTALL.md) for `agent-b`, then
+continue with the claim, intent, and `loom start` commands above.
 
 ## What You Should See
 
