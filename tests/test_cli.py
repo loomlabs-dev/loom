@@ -490,11 +490,10 @@ class CliTest(unittest.TestCase):
                     self.assertEqual(main(["start", "--bind", "agent-seat"]), 0)
 
             output = start_stdout.getvalue()
-            self.assertIn("Terminal binding recorded for this shell: agent-seat", output)
-            self.assertIn("Binding note:", output)
+            self.assertIn("Terminal binding set: agent-seat", output)
             self.assertIn("export LOOM_AGENT=agent-seat", output)
             self.assertIn("Identity note:", output)
-            self.assertIn("may not reuse the terminal binding for agent-seat", output)
+            self.assertIn("repeatable agent identity", output)
             self.assertIn("Mode: needs_identity", output)
             self.assertIn("Do this first: Pin a stable Loom agent identity for this shell.", output)
             self.assertIn("next: export LOOM_AGENT=agent-seat", output)
@@ -1803,10 +1802,7 @@ class CliTest(unittest.TestCase):
                 output,
             )
             self.assertIn(f"Adopted active work from: {raw_terminal_identity}", output)
-            self.assertIn(
-                "future commands may not reuse the terminal binding for agent-seat",
-                output,
-            )
+            self.assertIn("repeatable agent identity", output)
             self.assertIn("- export LOOM_AGENT=agent-seat", output)
             self.assertIn("- loom start", output)
 
