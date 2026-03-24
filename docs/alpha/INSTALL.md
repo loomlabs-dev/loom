@@ -70,7 +70,7 @@ loom start --bind agent-a
 loom claim "Describe the work you're starting" --scope path/to/area
 ```
 
-Loom now tries to reuse a terminal identity first and a parent-shell identity
+Loom now tries to reuse a terminal identity first and a host-process identity
 second before falling back to a raw process id. Start with `loom start --bind`
 unless Loom tells you otherwise.
 
@@ -83,7 +83,7 @@ For the shortest real two-agent walkthrough, continue with
 ## If `--bind` Prints A Binding Note
 
 Some shell environments still behave like unstable or hosted terminals even on
-local machines. Loom now tries a reusable parent-shell identity before giving
+local machines. Loom now tries a reusable host-process identity before giving
 up, and tells you immediately when that still is not enough. If
 `loom start --bind <agent-name>` or `loom whoami --bind <agent-name>` prints a
 `Binding note:`, switch to `LOOM_AGENT` for that shell right away:

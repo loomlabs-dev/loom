@@ -71,7 +71,7 @@ coordination, and explicitly say not to inspect `.loom/`, `.loom-reports/`,
 or Loom internals unless the available Loom commands are insufficient for the
 task.
 
-If Loom can recover a reusable terminal or parent-shell identity,
+If Loom can recover a reusable terminal or host-process identity,
 `loom start --bind <agent-name>` is the fastest first-run path: it binds the
 shell and immediately returns the best next coordination action in one
 command.

@@ -17,7 +17,7 @@ Evaluate the current public alpha honestly:
 - pick a real repo and a real task with plausible overlap
 - choose stable agent identities for each terminal or agent runtime
 - in stable shells, prefer `loom start --bind <agent-name>` for the first move
-- Loom now tries to reuse a parent-shell identity before falling back, so
+- Loom now tries to reuse a host-process identity before falling back, so
   start with `--bind` unless Loom tells you it cannot
 - if Loom prints a `Binding note:` after `--bind`, switch to `LOOM_AGENT`
   immediately for that shell

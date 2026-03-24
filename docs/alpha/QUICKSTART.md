@@ -45,7 +45,7 @@ loom start
 ```
 
 Start with `loom start --bind agent-a`. Loom now tries to reuse a terminal
-identity first and a parent-shell identity second before falling back.
+identity first and a host-process identity second before falling back.
 
 If `loom start --bind agent-a` prints a `Binding note:`, switch immediately:
 

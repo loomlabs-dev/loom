@@ -3,6 +3,7 @@ from __future__ import annotations
 import getpass
 import os
 import socket
+import subprocess
 
 
 _SESSION_ENV_KEYS = (
@@ -14,6 +15,16 @@ _SESSION_ENV_KEYS = (
     ("KITTY_WINDOW_ID", "kitty"),
     ("WINDOWID", "window"),
 )
+_TRANSIENT_PARENT_COMMANDS = {
+    "sh",
+    "bash",
+    "zsh",
+    "dash",
+    "fish",
+    "ksh",
+    "csh",
+    "tcsh",
+}
 
 
 def resolve_agent_identity(
@@ -54,7 +65,7 @@ def terminal_identity_is_stable(identity: str | None = None) -> bool:
 
 def terminal_identity_pid(identity: str) -> int | None:
     label = identity.rsplit(":", maxsplit=1)[-1]
-    for prefix in ("pid-", "ppid-"):
+    for prefix in ("pid-", "host-"):
         if not label.startswith(prefix):
             continue
         pid_text = label.removeprefix(prefix)
@@ -93,8 +104,47 @@ def _terminal_label() -> str:
             return os.path.basename(os.ttyname(file_descriptor))
         except OSError:
             continue
+    host_pid = _host_process_pid()
+    if host_pid is not None:
+        return f"host-{host_pid}"
+    return f"pid-{os.getpid()}"
+
+
+def _host_process_pid(*, max_depth: int = 8) -> int | None:
     current_pid = os.getpid()
     parent_pid = os.getppid()
-    if parent_pid > 1 and parent_pid != current_pid:
-        return f"ppid-{parent_pid}"
-    return f"pid-{current_pid}"
+    visited: set[int] = set()
+    depth = 0
+    while parent_pid > 1 and parent_pid != current_pid and depth < max_depth:
+        if parent_pid in visited:
+            break
+        visited.add(parent_pid)
+        parent_info = _read_process_info(parent_pid)
+        if parent_info is None:
+            break
+        next_parent_pid, command = parent_info
+        command_name = os.path.basename(command).strip().lower()
+        if command_name and command_name not in _TRANSIENT_PARENT_COMMANDS:
+            return parent_pid
+        parent_pid = next_parent_pid
+        depth += 1
+    return None
+
+
+def _read_process_info(pid: int) -> tuple[int, str] | None:
+    try:
+        output = subprocess.check_output(
+            ["ps", "-o", "ppid=,comm=", "-p", str(pid)],
+            text=True,
+        ).strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if not output:
+        return None
+    parts = output.split(None, 1)
+    if len(parts) != 2:
+        return None
+    parent_pid_text, command = parts
+    if not parent_pid_text.isdigit():
+        return None
+    return int(parent_pid_text), command.strip()

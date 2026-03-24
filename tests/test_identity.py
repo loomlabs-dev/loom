@@ -82,12 +82,12 @@ class IdentityTest(unittest.TestCase):
 
     def test_terminal_identity_is_stable_distinguishes_pid_labels(self) -> None:
         self.assertFalse(terminal_identity_is_stable("dev@machine:pid-1234"))
-        self.assertTrue(terminal_identity_is_stable("dev@machine:ppid-4321"))
+        self.assertTrue(terminal_identity_is_stable("dev@machine:host-4321"))
         self.assertTrue(terminal_identity_is_stable("dev@machine:tmux-7"))
 
     def test_terminal_identity_pid_extracts_process_bound_labels_only(self) -> None:
         self.assertEqual(terminal_identity_pid("dev@machine:pid-1234"), 1234)
-        self.assertEqual(terminal_identity_pid("dev@machine:ppid-4321"), 4321)
+        self.assertEqual(terminal_identity_pid("dev@machine:host-4321"), 4321)
         self.assertIsNone(terminal_identity_pid("dev@machine:tmux-7"))
         self.assertIsNone(terminal_identity_pid("dev@machine:pid-nope"))
 
@@ -106,7 +106,7 @@ class IdentityTest(unittest.TestCase):
         )
         self.assertTrue(
             terminal_identity_process_is_alive(
-                "dev@machine:ppid-4321",
+                "dev@machine:host-4321",
                 kill_fn=lambda pid, signal: None,
             )
         )
@@ -131,7 +131,7 @@ class IdentityTest(unittest.TestCase):
         self.assertEqual(label, "loom-alpha")
         ttyname.assert_not_called()
 
-    def test_terminal_label_falls_back_to_tty_basename_then_parent_pid_then_pid(self) -> None:
+    def test_terminal_label_falls_back_to_tty_basename_then_host_pid_then_pid(self) -> None:
         with patch.dict(os.environ, {}, clear=True), patch(
             "loom.identity.os.ttyname",
             side_effect=lambda fd: "/dev/ttys003" if fd == 1 else (_ for _ in ()).throw(OSError("no tty")),
@@ -143,24 +143,42 @@ class IdentityTest(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True), patch(
             "loom.identity.os.ttyname",
             side_effect=OSError("no tty"),
-        ), patch("loom.identity.os.getppid", return_value=3210), patch(
-            "loom.identity.os.getpid",
-            return_value=4321,
+        ), patch(
+            "loom.identity._host_process_pid",
+            return_value=3210,
         ):
             label = _terminal_label()
 
-        self.assertEqual(label, "ppid-3210")
+        self.assertEqual(label, "host-3210")
 
         with patch.dict(os.environ, {}, clear=True), patch(
             "loom.identity.os.ttyname",
             side_effect=OSError("no tty"),
-        ), patch("loom.identity.os.getppid", return_value=1), patch(
+        ), patch("loom.identity._host_process_pid", return_value=None), patch(
             "loom.identity.os.getpid",
             return_value=4321,
         ):
             label = _terminal_label()
 
         self.assertEqual(label, "pid-4321")
+
+    def test_host_process_pid_skips_shell_ancestors_to_find_stable_host(self) -> None:
+        parent_chain = {
+            200: (150, "/bin/bash"),
+            150: (100, "/bin/zsh"),
+            100: (1, "/Applications/Codex.app/Contents/Resources/codex"),
+        }
+
+        with patch("loom.identity.os.getpid", return_value=300), patch(
+            "loom.identity.os.getppid",
+            return_value=200,
+        ), patch(
+            "loom.identity._read_process_info",
+            side_effect=lambda pid: parent_chain.get(pid),
+        ):
+            from loom.identity import _host_process_pid  # noqa: E402
+
+            self.assertEqual(_host_process_pid(), 100)
 
 
 if __name__ == "__main__":
