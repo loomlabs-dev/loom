@@ -1,6 +1,6 @@
 # Loom Command FAQ
 
-Last updated: March 19, 2026
+Last updated: March 24, 2026
 
 This page answers the practical question behind every public Loom command:
 
@@ -71,9 +71,10 @@ coordination, and explicitly say not to inspect `.loom/`, `.loom-reports/`,
 or Loom internals unless the available Loom commands are insufficient for the
 task.
 
-If the shell has a stable terminal identity, `loom start --bind <agent-name>`
-is now the fastest first-run path: it binds the terminal and immediately
-returns the best next coordination action in one command.
+If Loom can recover a reusable terminal or parent-shell identity,
+`loom start --bind <agent-name>` is the fastest first-run path: it binds the
+shell and immediately returns the best next coordination action in one
+command.
 
 The MCP `loom_start` tool and `loom://start` resource now mirror that same
 quick loop and command guide, so agent hosts do not have to infer the command
@@ -106,7 +107,7 @@ Useful flags:
 - `--no-daemon`: skip best-effort daemon startup
 - `--agent <name>`: persist a repo-local default agent
 
-After `loom init`, the usual next move in a stable shell is now:
+After `loom init`, the usual next move is now:
 
 ```bash
 loom start --bind agent-a
@@ -123,9 +124,9 @@ loom whoami
 loom whoami --bind agent-a
 ```
 
-For first-run work in a stable shell, prefer `loom start --bind agent-a` when
-you want Loom to bind the terminal and immediately continue into the action
-loop. Use `loom whoami --bind ...` when you want to inspect or set the binding
+For first-run work, prefer `loom start --bind agent-a` when you want Loom to
+bind the terminal and immediately continue into the action loop. Use
+`loom whoami --bind ...` when you want to inspect or set the binding
 explicitly before doing anything else.
 
 Useful flags:
@@ -140,8 +141,9 @@ into the bound agent automatically when it is safe to do so. That keeps the
 board from forking into a real agent plus stale `pid-*` work during first-run
 or recovery flows.
 
-If you are in an agent-hosted shell without a stable terminal identity, prefer
-`LOOM_AGENT` or `--agent` over `--bind`.
+If Loom still prints a `Binding note:` after `--bind`, that shell did not
+offer a reusable identity. Switch to `LOOM_AGENT` or use explicit `--agent`
+commands there.
 
 On the MCP surface, the equivalent write tool is `loom_bind`.
 

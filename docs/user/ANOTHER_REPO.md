@@ -1,6 +1,6 @@
 # Using Loom In Another Repo
 
-Last updated: March 20, 2026
+Last updated: March 24, 2026
 
 You do **not** need to install Loom separately in every repository.
 
@@ -56,8 +56,6 @@ loom start --bind agent-a
 
 ## First Run In Another Repo
 
-In a normal terminal:
-
 ```bash
 cd /path/to/other-repo
 loom init
@@ -65,20 +63,23 @@ loom start --bind agent-a
 loom claim "Describe the work you're starting" --scope path/to/area
 ```
 
-In an agent-hosted shell without a stable terminal identity:
+Start with `loom start --bind agent-a`. Loom now tries to reuse a terminal
+identity first and a parent-shell identity second before falling back.
+
+If Loom prints a `Binding note:`, switch that shell to:
 
 ```bash
 cd /path/to/other-repo
-loom init
 export LOOM_AGENT=agent-a
+loom whoami
 loom claim "Describe the work you're starting" --scope path/to/area
 loom start
 ```
 
-In a stable shell, prefer `loom start --bind <agent-name>` for the first run.
-It binds the shell and immediately returns the best next coordination action in
-one command. Use plain `loom start` when the identity is already bound or when
-you want a read-first status check without changing identity.
+Prefer `loom start --bind <agent-name>` for the first run. It binds the shell
+and immediately returns the best next coordination action in one command. Use
+plain `loom start` when the identity is already bound or when you want a
+read-first status check without changing identity.
 
 ## What `loom init` Does In Each Repo
 

@@ -54,12 +54,14 @@ def terminal_identity_is_stable(identity: str | None = None) -> bool:
 
 def terminal_identity_pid(identity: str) -> int | None:
     label = identity.rsplit(":", maxsplit=1)[-1]
-    if not label.startswith("pid-"):
-        return None
-    pid_text = label.removeprefix("pid-")
-    if not pid_text.isdigit():
-        return None
-    return int(pid_text)
+    for prefix in ("pid-", "ppid-"):
+        if not label.startswith(prefix):
+            continue
+        pid_text = label.removeprefix(prefix)
+        if not pid_text.isdigit():
+            return None
+        return int(pid_text)
+    return None
 
 
 def terminal_identity_process_is_alive(
@@ -86,7 +88,13 @@ def _terminal_label() -> str:
         value = os.environ.get(env_key)
         if value and value.strip():
             return f"{label}-{value.strip()}"
-    try:
-        return os.path.basename(os.ttyname(0))
-    except OSError:
-        return f"pid-{os.getpid()}"
+    for file_descriptor in (0, 1, 2):
+        try:
+            return os.path.basename(os.ttyname(file_descriptor))
+        except OSError:
+            continue
+    current_pid = os.getpid()
+    parent_pid = os.getppid()
+    if parent_pid > 1 and parent_pid != current_pid:
+        return f"ppid-{parent_pid}"
+    return f"pid-{current_pid}"

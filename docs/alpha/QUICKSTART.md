@@ -1,6 +1,6 @@
 # 2 Agents, 1 Repo, 5 Minutes
 
-Last updated: March 19, 2026
+Last updated: March 24, 2026
 
 This is the shortest honest path to a real Loom session.
 
@@ -37,8 +37,6 @@ If you do not want to install the console script yet, use the fallback in
 
 ## Terminal 1
 
-If this is a normal terminal with a stable identity:
-
 ```bash
 loom init --no-daemon
 loom start --bind agent-a
@@ -46,37 +44,53 @@ loom claim "Refactor auth flow" --scope src/auth
 loom start
 ```
 
-If this is an agent-hosted shell without a stable terminal identity:
+Start with `loom start --bind agent-a`. Loom now tries to reuse a terminal
+identity first and a parent-shell identity second before falling back.
+
+If `loom start --bind agent-a` prints a `Binding note:`, switch immediately:
 
 ```bash
-loom init --no-daemon
 export LOOM_AGENT=agent-a
+loom whoami
+loom claim "Refactor auth flow" --scope src/auth
+loom start
+```
+
+If an older run already fell back to a raw `tty` / `pid` identity instead of
+`agent-a`, recover like this before continuing:
+
+```bash
+loom clean
+export LOOM_AGENT=agent-a
+loom whoami
 loom claim "Refactor auth flow" --scope src/auth
 loom start
 ```
 
 ## Terminal 2
 
-If this is a normal terminal with a stable identity:
-
 ```bash
 loom start --bind agent-b
 loom claim "Add rate limiting hook" --scope src/api
-loom intent "Touch auth middleware" --reason "Need auth middleware integration"
+loom intent "Touch auth middleware" --reason "Need auth middleware integration" --scope src/auth
 loom start
 ```
 
-If this is an agent-hosted shell without a stable terminal identity:
+If `loom start --bind agent-b` prints a `Binding note:`, or the second shell
+behaves like an unstable terminal identity, switch to:
 
 ```bash
 export LOOM_AGENT=agent-b
+loom whoami
 loom claim "Add rate limiting hook" --scope src/api
-loom intent "Touch auth middleware" --reason "Need auth middleware integration"
+loom intent "Touch auth middleware" --reason "Need auth middleware integration" --scope src/auth
 loom start
 ```
 
 ## What You Should See
 
+- if Loom still cannot recover a reusable shell identity, it should say so
+  immediately and point you to `LOOM_AGENT`
 - `loom conflicts` shows a scope-overlap warning between the auth claim and the
   auth-middleware intent
 - `loom inbox` for `agent-b` points to the conflict

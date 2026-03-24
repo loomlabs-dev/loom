@@ -1,6 +1,6 @@
 # Public Alpha Install
 
-Last updated: March 19, 2026
+Last updated: March 24, 2026
 
 Loom's current public alpha install path is repo-first.
 
@@ -70,8 +70,43 @@ loom start --bind agent-a
 loom claim "Describe the work you're starting" --scope path/to/area
 ```
 
+Loom now tries to reuse a terminal identity first and a parent-shell identity
+second before falling back to a raw process id. Start with `loom start --bind`
+unless Loom tells you otherwise.
+
+If Loom prints a `Binding note:` after `loom start --bind`, switch that shell
+to `LOOM_AGENT` before continuing.
+
 For the shortest real two-agent walkthrough, continue with
 [QUICKSTART.md](QUICKSTART.md).
+
+## If `--bind` Prints A Binding Note
+
+Some shell environments still behave like unstable or hosted terminals even on
+local machines. Loom now tries a reusable parent-shell identity before giving
+up, and tells you immediately when that still is not enough. If
+`loom start --bind <agent-name>` or `loom whoami --bind <agent-name>` prints a
+`Binding note:`, switch to `LOOM_AGENT` for that shell right away:
+
+```bash
+export LOOM_AGENT=agent-a
+loom whoami
+```
+
+If `loom whoami` now shows the expected agent id, continue the session with
+`LOOM_AGENT` set for that shell.
+
+This is also the right move when a previous `--bind` happened in a different
+shell invocation and the current command no longer shares that terminal
+identity.
+
+If an older run already left a dead `pid-*` session behind, recover like this:
+
+```bash
+loom clean
+export LOOM_AGENT=agent-a
+loom whoami
+```
 
 ## Current Packaging Truth
 

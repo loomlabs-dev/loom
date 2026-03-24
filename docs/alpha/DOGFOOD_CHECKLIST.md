@@ -1,6 +1,6 @@
 # Dogfood Checklist
 
-Last updated: March 20, 2026
+Last updated: March 24, 2026
 
 Use this checklist for real Loom sessions in real repositories.
 
@@ -15,10 +15,13 @@ Evaluate the current public alpha honestly:
 
 - install Loom or run it from a checkout
 - pick a real repo and a real task with plausible overlap
-- choose stable agent identities for each terminal or runtime
-- in stable shells, prefer `loom start --bind <agent-name>`
-- in agent-hosted shells without a stable terminal identity, prefer
-  `LOOM_AGENT` or `--agent`
+- choose stable agent identities for each terminal or agent runtime
+- in stable shells, prefer `loom start --bind <agent-name>` for the first move
+- Loom now tries to reuse a parent-shell identity before falling back, so
+  start with `--bind` unless Loom tells you it cannot
+- if Loom prints a `Binding note:` after `--bind`, switch to `LOOM_AGENT`
+  immediately for that shell
+- otherwise start with `loom start`
 
 Recommended background views:
 
@@ -53,8 +56,21 @@ Core loop:
 Signal quality:
 
 - were conflicts surfaced early enough to change behavior?
-- did `next_steps` help when the session got messy?
-- did cleanup and stale-session recovery feel obvious?
+- did conflict kinds feel understandable?
+- was `log --follow` useful or noisy?
+- did `next_steps` actually help you recover from uncertainty?
+
+Operational fit:
+
+- did daemon-backed behavior feel meaningfully better than direct mode?
+- did identities stay stable across terminals?
+- did hosted shells still need `LOOM_AGENT`, or did `--bind` now hold?
+- did scope entry feel easy enough in real work?
+
+Cleanup:
+
+- if stale `pid-*` agents appear with no active claim or intent, did Loom make
+  it obvious how to clear those old claims before evaluating the new session?
 
 ## What To Capture Afterward
 
