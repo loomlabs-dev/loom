@@ -101,6 +101,26 @@ class CliActionsTest(unittest.TestCase):
             ),
         )
 
+    def test_whoami_next_steps_for_unstable_terminal_binding_uses_concrete_env_binding(self) -> None:
+        steps = whoami_next_steps(
+            project=SimpleNamespace(),
+            identity={
+                "id": "agent-seat",
+                "source": "terminal",
+                "stable_terminal_identity": False,
+                "terminal_identity": "dev@host:pid-123",
+            },
+        )
+
+        self.assertEqual(
+            steps,
+            (
+                "export LOOM_AGENT=agent-seat",
+                "loom start",
+                'loom claim "Describe the work you\'re starting" --scope path/to/area',
+            ),
+        )
+
     def test_start_next_steps_for_raw_tty_identity_prioritizes_binding_path(self) -> None:
         steps = start_next_steps(
             project=SimpleNamespace(),
@@ -138,6 +158,27 @@ class CliActionsTest(unittest.TestCase):
                 "loom start --bind <agent-name>",
                 'loom claim "Describe the work you\'re starting" --scope path/to/area',
                 "loom status",
+            ),
+        )
+
+    def test_start_next_steps_for_unstable_terminal_binding_restart_with_env_binding(self) -> None:
+        steps = start_next_steps(
+            project=SimpleNamespace(),
+            identity={
+                "id": "agent-seat",
+                "source": "terminal",
+                "stable_terminal_identity": False,
+                "terminal_identity": "dev@host:pid-123",
+            },
+            snapshot=StatusSnapshot(claims=(), intents=(), context=(), conflicts=()),
+        )
+
+        self.assertEqual(
+            steps,
+            (
+                "export LOOM_AGENT=agent-seat",
+                "loom start",
+                'loom claim "Describe the work you\'re starting" --scope path/to/area',
             ),
         )
 
@@ -210,6 +251,23 @@ class CliActionsTest(unittest.TestCase):
         self.assertEqual(action["command"], "loom clean")
         self.assertEqual(action["kind"], "cleanup")
 
+    def test_start_next_action_promotes_concrete_env_binding_after_unstable_bind(self) -> None:
+        action = start_next_action(
+            project=SimpleNamespace(),
+            identity={
+                "id": "agent-seat",
+                "source": "terminal",
+                "stable_terminal_identity": False,
+                "terminal_identity": "dev@host:pid-123",
+                "terminal_binding": "agent-seat",
+            },
+            snapshot=StatusSnapshot(claims=(), intents=(), context=(), conflicts=()),
+        )
+
+        assert action is not None
+        self.assertEqual(action["command"], "export LOOM_AGENT=agent-seat")
+        self.assertIn("future commands may not reuse that terminal binding", action["reason"])
+
     def test_start_next_steps_prefers_clean_when_dead_sessions_exist(self) -> None:
         self.assertEqual(
             start_next_steps(
@@ -242,6 +300,23 @@ class CliActionsTest(unittest.TestCase):
         self.assertEqual(action["command"], "loom start --bind <agent-name>")
         self.assertEqual(action["summary"], "Bind this terminal and continue with Loom's first coordinated step.")
 
+    def test_status_next_action_promotes_concrete_env_binding_after_unstable_bind(self) -> None:
+        action = status_next_action(
+            store=SimpleNamespace(),
+            snapshot=StatusSnapshot(claims=(), intents=(), context=(), conflicts=()),
+            identity={
+                "id": "agent-seat",
+                "source": "terminal",
+                "stable_terminal_identity": False,
+                "terminal_identity": "dev@host:pid-123",
+                "terminal_binding": "agent-seat",
+            },
+        )
+
+        assert action is not None
+        self.assertEqual(action["command"], "export LOOM_AGENT=agent-seat")
+        self.assertEqual(action["summary"], "Pin a stable Loom agent identity for this shell.")
+
     def test_status_next_action_prefers_clean_when_dead_sessions_exist(self) -> None:
         action = status_next_action(
             store=SimpleNamespace(),
@@ -262,6 +337,25 @@ class CliActionsTest(unittest.TestCase):
                 dead_session_count=1,
             ),
             ("loom clean", "loom status", "loom agents --all"),
+        )
+
+    def test_status_next_steps_for_unstable_terminal_binding_restart_with_env_binding(self) -> None:
+        self.assertEqual(
+            status_next_steps(
+                snapshot=StatusSnapshot(claims=(), intents=(), context=(), conflicts=()),
+                identity={
+                    "id": "agent-seat",
+                    "source": "terminal",
+                    "stable_terminal_identity": False,
+                    "terminal_identity": "dev@host:pid-123",
+                    "terminal_binding": "agent-seat",
+                },
+            ),
+            (
+                "export LOOM_AGENT=agent-seat",
+                "loom start",
+                'loom claim "Describe the work you\'re starting" --scope path/to/area',
+            ),
         )
 
     def test_resume_report_and_timeline_helpers_prioritize_expected_paths(self) -> None:

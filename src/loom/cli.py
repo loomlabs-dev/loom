@@ -35,6 +35,7 @@ from .cli_actions import (
     error_next_steps as _error_next_steps,
     finish_next_steps as _finish_next_steps,
     handoff_resume_command as _handoff_resume_command,
+    identity_env_binding_command as _identity_env_binding_command,
     inbox_next_action as _inbox_next_action,
     inbox_next_steps as _inbox_next_steps,
     intent_command as _intent_command,
@@ -824,8 +825,13 @@ def _handle_start(args: argparse.Namespace) -> int:
         bind_command = (
             "loom start --bind <agent-name>"
             if identity.get("stable_terminal_identity", True)
-            else "export LOOM_AGENT=<agent-name>"
+            else _identity_env_binding_command(identity)
         )
+    elif (
+        identity["source"] == "terminal"
+        and not identity.get("stable_terminal_identity", True)
+    ):
+        bind_command = _identity_env_binding_command(identity)
     command_guide = _start_command_guide(
         include_init=project is None,
         bind_command=bind_command,

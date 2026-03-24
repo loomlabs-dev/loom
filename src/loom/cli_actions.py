@@ -42,9 +42,21 @@ def _scope_args(scope: tuple[str, ...]) -> str:
     return "".join(f" --scope {item}" for item in scope)
 
 
+def identity_env_binding_command(identity: dict[str, object]) -> str:
+    agent_id = str(identity.get("id", "")).strip()
+    terminal_identity = str(identity.get("terminal_identity", "")).strip()
+    if (
+        str(identity.get("source", "")).strip() == "terminal"
+        and agent_id
+        and agent_id != terminal_identity
+    ):
+        return f"export LOOM_AGENT={agent_id}"
+    return "export LOOM_AGENT=<agent-name>"
+
+
 def _action_first_bind_command(identity: dict[str, object]) -> str:
     if guidance_identity_needs_env_binding(identity):
-        return "export LOOM_AGENT=<agent-name>"
+        return identity_env_binding_command(identity)
     return "loom start --bind <agent-name>"
 
 
@@ -116,7 +128,7 @@ def onboarding_commands(
     if identity is not None and identity.get("source") == "tty":
         if guidance_identity_needs_env_binding(identity):
             return (
-                "export LOOM_AGENT=<agent-name>",
+                identity_env_binding_command(identity),
                 "loom start",
                 claim_command(scope=("path/to/area",)),
             )
@@ -139,7 +151,7 @@ def onboarding_commands(
             steps.append("loom status")
         elif key == "bind":
             if identity is not None and guidance_identity_needs_env_binding(identity):
-                steps.append("export LOOM_AGENT=<agent-name>")
+                steps.append(identity_env_binding_command(identity))
             else:
                 steps.append("loom start --bind <agent-name>")
     return tuple(steps)
@@ -154,14 +166,14 @@ def whoami_next_steps(
         if guidance_identity_needs_env_binding(identity):
             return (
                 "loom init --no-daemon",
-                "export LOOM_AGENT=<agent-name>",
+                identity_env_binding_command(identity),
                 claim_command(scope=("path/to/area",)),
             )
         return ("loom init --no-daemon",)
     if identity.get("source") == "tty":
         if guidance_identity_needs_env_binding(identity):
             return (
-                "export LOOM_AGENT=<agent-name>",
+                identity_env_binding_command(identity),
                 "loom start",
                 claim_command(scope=("path/to/area",)),
             )
@@ -169,6 +181,15 @@ def whoami_next_steps(
             "loom start --bind <agent-name>",
             claim_command(scope=("path/to/area",)),
             "loom status",
+        )
+    if (
+        identity.get("source") == "terminal"
+        and guidance_identity_needs_env_binding(identity)
+    ):
+        return (
+            identity_env_binding_command(identity),
+            "loom start",
+            claim_command(scope=("path/to/area",)),
         )
     return (
         "loom start",
@@ -195,7 +216,7 @@ def _start_step_command(
         return "loom init --no-daemon"
     if key == "bind":
         if guidance_identity_needs_env_binding(identity):
-            return "export LOOM_AGENT=<agent-name>"
+            return identity_env_binding_command(identity)
         return "loom start --bind <agent-name>"
     if key == "claim":
         return claim_command(scope=suggested_scope or ("path/to/area",))
@@ -270,11 +291,21 @@ def start_next_steps(
         )
     if (
         project is not None
+        and identity.get("source") == "terminal"
+        and guidance_identity_needs_env_binding(identity)
+    ):
+        return (
+            identity_env_binding_command(identity),
+            "loom start",
+            claim_command(scope=("path/to/area",)),
+        )
+    if (
+        project is not None
         and identity.get("source") == "tty"
         and guidance_identity_needs_env_binding(identity)
     ):
         return (
-            "export LOOM_AGENT=<agent-name>",
+            identity_env_binding_command(identity),
             "loom start",
             claim_command(scope=("path/to/area",)),
         )
@@ -377,15 +408,29 @@ def start_next_action(
     worktree_signal: dict[str, object] | None = None,
 ) -> dict[str, object] | None:
     identity_recommendation = None
-    if project is not None and identity.get("source") == "tty":
-        if guidance_identity_needs_env_binding(identity):
+    if project is not None:
+        if (
+            identity.get("source") == "terminal"
+            and guidance_identity_needs_env_binding(identity)
+        ):
+            agent_id = str(identity.get("id", "")).strip() or "this agent"
             identity_recommendation = command_action(
-                command="export LOOM_AGENT=<agent-name>",
+                command=identity_env_binding_command(identity),
+                summary="Pin a stable Loom agent identity for this shell.",
+                reason=(
+                    f"This shell bound {agent_id} for this command, but future commands may "
+                    "not reuse that terminal binding."
+                ),
+                confidence="high",
+            )
+        elif identity.get("source") == "tty" and guidance_identity_needs_env_binding(identity):
+            identity_recommendation = command_action(
+                command=identity_env_binding_command(identity),
                 summary="Pin a stable Loom agent identity for this shell.",
                 reason="This shell has no stable terminal identity for repeatable coordination.",
                 confidence="high",
             )
-        else:
+        elif identity.get("source") == "tty":
             identity_recommendation = command_action(
                 command=_action_first_bind_command(identity),
                 summary="Bind this terminal and continue with Loom's first coordinated step.",
@@ -448,7 +493,7 @@ def status_next_action(
     if not has_stable_identity:
         if guidance_identity_needs_env_binding(identity):
             identity_recommendation = command_action(
-                command="export LOOM_AGENT=<agent-name>",
+                command=identity_env_binding_command(identity),
                 summary="Pin a stable Loom agent identity for this shell.",
                 reason="The repository is ready, but Loom does not see a stable agent identity yet.",
                 confidence="high",
@@ -720,13 +765,23 @@ def status_next_steps(
             claim_command(scope=("path/to/area",)),
             "loom status",
         )
+    if (
+        step_order == ("start", "bind", "claim")
+        and identity.get("source") == "terminal"
+        and guidance_identity_needs_env_binding(identity)
+    ):
+        return (
+            identity_env_binding_command(identity),
+            "loom start",
+            claim_command(scope=("path/to/area",)),
+        )
     steps: list[str] = []
     for key in step_order:
         if key == "start":
             steps.append("loom start")
         elif key == "bind":
             if guidance_identity_needs_env_binding(identity):
-                steps.append("export LOOM_AGENT=<agent-name>")
+                steps.append(identity_env_binding_command(identity))
             else:
                 steps.append("loom start --bind <agent-name>")
         elif key == "claim":
@@ -747,6 +802,16 @@ def status_next_steps(
 def agents_next_steps(*, agent_count: int, identity: dict[str, object]) -> tuple[str, ...]:
     if (
         agent_count == 0
+        and identity.get("source") == "terminal"
+        and guidance_identity_needs_env_binding(identity)
+    ):
+        return (
+            identity_env_binding_command(identity),
+            "loom start",
+            claim_command(scope=("path/to/area",)),
+        )
+    if (
+        agent_count == 0
         and identity.get("source") == "tty"
         and not guidance_identity_needs_env_binding(identity)
     ):
@@ -764,7 +829,7 @@ def agents_next_steps(*, agent_count: int, identity: dict[str, object]) -> tuple
             steps.append("loom start")
         elif key == "bind":
             if guidance_identity_needs_env_binding(identity):
-                steps.append("export LOOM_AGENT=<agent-name>")
+                steps.append(identity_env_binding_command(identity))
             else:
                 steps.append("loom start --bind <agent-name>")
         elif key == "claim":

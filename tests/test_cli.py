@@ -215,6 +215,12 @@ class CliTest(unittest.TestCase):
             with working_directory(repo_root), patch(
                 "loom.cli.current_terminal_identity",
                 return_value="tester@host:pid-12345",
+            ), patch(
+                "loom.cli_runtime.current_terminal_identity",
+                return_value="tester@host:pid-12345",
+            ), patch(
+                "loom.identity.current_terminal_identity",
+                return_value="tester@host:pid-12345",
             ):
                 self.assertEqual(main(["init", "--no-daemon"]), 0)
                 with contextlib.redirect_stdout(stdout):
@@ -234,6 +240,12 @@ class CliTest(unittest.TestCase):
 
             with working_directory(repo_root), patch(
                 "loom.cli.current_terminal_identity",
+                return_value="tester@host:pid-12345",
+            ), patch(
+                "loom.cli_runtime.current_terminal_identity",
+                return_value="tester@host:pid-12345",
+            ), patch(
+                "loom.identity.current_terminal_identity",
                 return_value="tester@host:pid-12345",
             ):
                 self.assertEqual(main(["init", "--no-daemon"]), 0)
@@ -455,6 +467,79 @@ class CliTest(unittest.TestCase):
             self.assertIn("Identity: agent-seat (source: terminal)", output)
             self.assertIn("Do this first:", output)
             self.assertIn("next: loom claim", output)
+
+    def test_start_bind_warns_when_terminal_identity_is_pid_based(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = pathlib.Path(temp_dir)
+            (repo_root / ".git").mkdir()
+            init_stdout = io.StringIO()
+            start_stdout = io.StringIO()
+            raw_terminal_identity = "tester@host:pid-12345"
+
+            with working_directory(repo_root), contextlib.redirect_stdout(init_stdout):
+                self.assertEqual(main(init_command()), 0)
+
+            with patch("loom.identity.current_terminal_identity", return_value=raw_terminal_identity), patch(
+                "loom.cli.current_terminal_identity",
+                return_value=raw_terminal_identity,
+            ), patch(
+                "loom.cli_runtime.current_terminal_identity",
+                return_value=raw_terminal_identity,
+            ):
+                with working_directory(repo_root), contextlib.redirect_stdout(start_stdout):
+                    self.assertEqual(main(["start", "--bind", "agent-seat"]), 0)
+
+            output = start_stdout.getvalue()
+            self.assertIn("Terminal binding recorded for this shell: agent-seat", output)
+            self.assertIn("Binding note:", output)
+            self.assertIn("export LOOM_AGENT=agent-seat", output)
+            self.assertIn("Identity note:", output)
+            self.assertIn("may not reuse the terminal binding for agent-seat", output)
+            self.assertIn("Mode: needs_identity", output)
+            self.assertIn("Do this first: Pin a stable Loom agent identity for this shell.", output)
+            self.assertIn("next: export LOOM_AGENT=agent-seat", output)
+
+    def test_start_bind_json_promotes_env_followup_when_terminal_identity_is_pid_based(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = pathlib.Path(temp_dir)
+            (repo_root / ".git").mkdir()
+            raw_terminal_identity = "tester@host:pid-12345"
+            init_stdout = io.StringIO()
+            start_stdout = io.StringIO()
+
+            with working_directory(repo_root), contextlib.redirect_stdout(init_stdout):
+                self.assertEqual(main(init_command()), 0)
+
+            with patch("loom.identity.current_terminal_identity", return_value=raw_terminal_identity), patch(
+                "loom.cli.current_terminal_identity",
+                return_value=raw_terminal_identity,
+            ), patch(
+                "loom.cli_runtime.current_terminal_identity",
+                return_value=raw_terminal_identity,
+            ):
+                with working_directory(repo_root), contextlib.redirect_stdout(start_stdout):
+                    self.assertEqual(main(["start", "--bind", "agent-seat", "--json"]), 0)
+
+            payload = json.loads(start_stdout.getvalue())
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["mode"], "needs_identity")
+            self.assertIn("still needs LOOM_AGENT", payload["summary"])
+            self.assertEqual(payload["next_action"]["command"], "export LOOM_AGENT=agent-seat")
+            self.assertEqual(
+                payload["next_steps"],
+                [
+                    "export LOOM_AGENT=agent-seat",
+                    "loom start",
+                    'loom claim "Describe the work you\'re starting" --scope path/to/area',
+                ],
+            )
+            self.assertIn(
+                {
+                    "command": "export LOOM_AGENT=agent-seat",
+                    "summary": "Pin a stable agent identity before coordinated work.",
+                },
+                payload["command_guide"],
+            )
 
     def test_start_with_conflicts_points_to_inbox_and_conflicts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -1718,6 +1803,12 @@ class CliTest(unittest.TestCase):
                 output,
             )
             self.assertIn(f"Adopted active work from: {raw_terminal_identity}", output)
+            self.assertIn(
+                "future commands may not reuse the terminal binding for agent-seat",
+                output,
+            )
+            self.assertIn("- export LOOM_AGENT=agent-seat", output)
+            self.assertIn("- loom start", output)
 
             project = load_project(repo_root)
             store = CoordinationStore(project.db_path, repo_root=project.repo_root)

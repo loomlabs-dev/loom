@@ -60,8 +60,11 @@ def identity_has_stable_coordination(
 ) -> bool:
     if identity is None:
         return default_agent is not None
+    stable_terminal_binding = bool(identity.get("terminal_binding")) and not identity_needs_env_binding(
+        identity
+    )
     return bool(
-        identity.get("terminal_binding")
+        stable_terminal_binding
         or identity.get("project_default_agent")
         or identity.get("source") == "env"
     )
@@ -896,6 +899,11 @@ def start_summary(
         return (
             "needs_identity",
             f"{agent_id} is a raw terminal identity. Resolve a stable agent before coordinated work.",
+        )
+    if identity.get("source") == "terminal" and identity_needs_env_binding(identity):
+        return (
+            "needs_identity",
+            f"{agent_id} is bound for this command, but this shell still needs LOOM_AGENT for repeatable coordination.",
         )
     if active_work is not None and active_work.get("started_at") is not None:
         if active_work.get("lease_alert") is not None:
